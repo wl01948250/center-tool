@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<title>中心價計算器</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<style>
+    body {
+        font-family: "Microsoft JhengHei", sans-serif;
+        background: #e9eef5;
+        margin: 0;
+        padding: 20px;
+        display: flex;
+        justify-content: center;
+    }
+
+    .container {
+        width: 100%;
+        max-width: 480px;
+        background: #fff;
+        padding: 20px;
+        border-radius: 16px;
+        box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+    }
+
+    h2 {
+        text-align: center;
+        margin-bottom: 20px;
+        font-size: 24px;
+        color: #333;
+    }
+
+    input {
+        width: 100%;
+        padding: 14px;
+        margin: 10px 0;
+        font-size: 18px;
+        border-radius: 10px;
+        border: 1px solid #ccc;
+        box-sizing: border-box;
+    }
+
+    .mode-buttons {
+        display: flex;
+        justify-content: space-between;
+        margin-top: 10px;
+    }
+
+    .mode-buttons button {
+        width: 32%;
+        padding: 12px;
+        font-size: 16px;
+        border: none;
+        border-radius: 10px;
+        background: #d0d7e2;
+        color: #333;
+        position: relative;
+    }
+
+    .mode-buttons button.active {
+        background: #ff9800;
+        color: white;
+        font-weight: bold;
+    }
+
+    .distance-display {
+        position: absolute;
+        top: 100%;
+        left: 50%;
+        transform: translateX(-50%);
+        background: rgba(0,0,0,0.8);
+        color: white;
+        padding: 4px 8px;
+        border-radius: 6px;
+        font-size: 14px;
+        white-space: nowrap;
+        opacity: 0;
+        visibility: hidden;
+        transition: all 0.3s;
+        z-index: 10;
+        margin-top: 2px;
+    }
+
+    .mode-buttons button.active .distance-display {
+        opacity: 1;
+        visibility: visible;
+    }
+
+    .calc-btn {
+        width: 100%;
+        padding: 15px;
+        margin-top: 20px;
+        font-size: 18px;
+        background: #007bff;
+        color: white;
+        border: none;
+        border-radius: 10px;
+    }
+
+    .result {
+        margin-top: 20px;
+        padding: 20px;
+        background: #f3f6ff;
+        border-radius: 12px;
+        font-size: 17px;
+        white-space: pre-line;
+        max-height: 500px;
+        overflow-y: auto;
+        border: 1px solid #dce3f0;
+    }
+
+    .center {
+        color: #d60000;
+        font-weight: bold;
+    }
+</style>
+</head>
+
+<body>
+<div class="container">
+    <h2>中心價計算器</h2>
+
+    <input id="a" type="number" placeholder="輸入數字 A">
+    <input id="b" type="number" placeholder="輸入數字 B">
+
+    <div class="mode-buttons">
+        <button id="btn2" onclick="setMode(2)">
+            1/2
+            <div class="distance-display" id="dist2"></div>
+        </button>
+        <button id="btn4" onclick="setMode(4)" class="active">
+            1/4
+            <div class="distance-display" id="dist4"></div>
+        </button>
+        <button id="btn8" onclick="setMode(8)">
+            1/8
+            <div class="distance-display" id="dist8"></div>
+        </button>
+    </div>
+
+    <button class="calc-btn" onclick="calc()">計算</button>
+
+    <div id="output" class="result"></div>
+</div>
+
+<script>
+let mode = 4; // 預設 1/4
+
+function setMode(m) {
+    mode = m;
+    document.getElementById("btn2").classList.remove("active");
+    document.getElementById("btn4").classList.remove("active");
+    document.getElementById("btn8").classList.remove("active");
+
+    if (m === 2) document.getElementById("btn2").classList.add("active");
+    if (m === 4) document.getElementById("btn4").classList.add("active");
+    if (m === 8) document.getElementById("btn8").classList.add("active");
+    
+    updateDistanceDisplays();
+}
+
+function updateDistanceDisplays() {
+    let a = parseFloat(document.getElementById("a").value);
+    let b = parseFloat(document.getElementById("b").value);
+    
+    if (!isNaN(a) && !isNaN(b)) {
+        let high = Math.max(a, b);
+        let low = Math.min(a, b);
+        let diff = high - low;
+        
+        document.getElementById("dist2").textContent = `1/2距離: ${diff/2}`;
+        document.getElementById("dist4").textContent = `1/4距離: ${diff/4}`;
+        document.getElementById("dist8").textContent = `1/8距離: ${diff/8}`;
+    } else {
+        document.getElementById("dist2").textContent = "1/2距離: --";
+        document.getElementById("dist4").textContent = "1/4距離: --";
+        document.getElementById("dist8").textContent = "1/8距離: --";
+    }
+}
+
+function calc() {
+    let a = parseFloat(document.getElementById("a").value);
+    let b = parseFloat(document.getElementById("b").value);
+
+    if (isNaN(a) || isNaN(b)) {
+        document.getElementById("output").innerHTML = "請輸入有效數字";
+        return;
+    }
+
+    let high = Math.max(a, b);
+    let low = Math.min(a, b);
+    let diff = high - low;
+
+    // 中心價
+    let step = diff / mode;
+    let center = low + step * (mode / 2);
+
+    // 延伸 41 格（中心上下各 20）
+    let ext = [];
+    for (let i = 20; i > 0; i--) ext.push(center + step * i);
+    ext.push(center);
+    for (let i = 1; i <= 20; i++) ext.push(center - step * i);
+
+    let html =
+`高值：${high}
+低值：${low}
+差距：${diff}
+
+【目前模式：1/${mode}】
+中心價：${center}
+
+【延伸價格（共 41 格）】\n`;
+
+    ext.forEach((v, i) => {
+        if (i === 20) {
+            html += `<span class="center">${v} ← 中心</span>\n`;
+        } else {
+            html += `${v}\n`;
+        }
+    });
+
+    document.getElementById("output").innerHTML = html;
+}
+
+// 監聽輸入變化
+document.getElementById("a").addEventListener("input", updateDistanceDisplays);
+document.getElementById("b").addEventListener("input", updateDistanceDisplays);
+</script>
+
+</body>
+</html>
