@@ -42,18 +42,21 @@ input{width:100%; padding:14px; margin:10px 0; font-size:18px; border-radius:10p
 <script>
 let mode = 4;
 
-// 黃金比例格子函數
+// 黃金比例格子函數（累加偏移，中心價發散）
 function gold_grid(high, low, n){
-    let w = (high + low)/2;
-    let d1 = (high - low)/2;
+    let center = (high+low)/2;
+    let d1 = (high-low)/2;
     let phi = 1.618;
-    let grid = [w];
+    let grid = [center];
+    let cumOffset = 0;
     for(let i=1;i<=n;i++){
-        let offset = d1*Math.pow(phi,i-1);
-        grid.push(w+offset);
-        grid.push(w-offset);
+        let offset = d1 * Math.pow(phi, i-1);
+        cumOffset += offset;
+        grid.push(center + cumOffset); // 上方
+        grid.push(center - cumOffset); // 下方
     }
-    return grid.sort((a,b)=>b-a); // 大到小
+    // 從大到小排列 & 四捨五入到 2 位
+    return grid.sort((a,b)=>b-a).map(v=>parseFloat(v.toFixed(2)));
 }
 
 function setMode(m){
@@ -78,7 +81,7 @@ function updateDistanceDisplays(){
         document.getElementById("dist8").textContent=`1/8距離: ${(diff/8).toFixed(2)}`;
         if(mode==='gold'){
             let g=gold_grid(high,low,20);
-            document.getElementById("distGold").textContent=`H20: ${g[0].toFixed(2)}`;
+            document.getElementById("distGold").textContent=`最高層: ${g[0].toFixed(2)}`;
         }
     }else{
         document.getElementById("dist2").textContent="1/2距離: --";
@@ -112,6 +115,7 @@ function calc(){
         gridArray.push(center);
         for(let i=1;i<=20;i++) gridArray.push(center-step*i);
         gridArray.sort((a,b)=>b-a);
+        gridArray=gridArray.map(v=>parseFloat(v.toFixed(2)));
     }
 
     let html=`高值：${high}
@@ -124,10 +128,10 @@ function calc(){
 【延伸價格（共 ${gridArray.length} 格）】\n`;
 
     gridArray.forEach(v=>{
-        if(v===center){
-            html+=`<span class="center">${v.toFixed(2)} ← 中心</span>\n`;
+        if(v===parseFloat(center.toFixed(2))){
+            html+=`<span class="center">${v} ← 中心</span>\n`;
         }else{
-            html+=`${v.toFixed(2)}\n`;
+            html+=`${v}\n`;
         }
     });
 
