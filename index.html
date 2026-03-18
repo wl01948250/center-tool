@@ -166,9 +166,9 @@ function calc(){
         let step=diff/mode;
         modeText=`1/${mode}`;
 
-        for(let i=20;i>0;i--) gridArray.push(center+step*i);
+        for(let i=50;i>0;i--) gridArray.push(center+step*i);
         gridArray.push(center);
-        for(let i=1;i<=20;i++) gridArray.push(center-step*i);
+        for(let i=1;i<=50;i++) gridArray.push(center-step*i);
 
         gridArray.sort((a,b)=>b-a);
         gridArray=gridArray.map(v=>parseFloat(v.toFixed(2)));
