@@ -10,7 +10,7 @@ body { font-family:"Microsoft JhengHei",sans-serif; background:#e9eef5; margin:0
 h2{text-align:center; margin-bottom:20px; font-size:24px; color:#333;}
 input{width:100%; padding:14px; margin:10px 0; font-size:18px; border-radius:10px; border:1px solid #ccc; box-sizing:border-box;}
 
-/* 上排按鈕 5 個 */
+/* 上排 5 個 */
 .mode-buttons{display:grid; grid-template-columns: repeat(5, 1fr); gap:6px; margin-top:10px;}
 /* 下排 2 個 */
 .mode-buttons.bottom-row{display:grid; grid-template-columns: repeat(2, 1fr); gap:6px; margin-top:6px;}
@@ -61,7 +61,7 @@ input{width:100%; padding:14px; margin:10px 0; font-size:18px; border-radius:10p
 <input id="a" type="number" placeholder="輸入數字 A">
 <input id="b" type="number" placeholder="輸入數字 B">
 
-<!-- 上排 5 個 -->
+<!-- 上排 -->
 <div class="mode-buttons">
 <button id="btn2" onclick="setMode(2)">1/2<div class="distance-display" id="dist2"></div></button>
 <button id="btn4" onclick="setMode(4)" class="active">1/4<div class="distance-display" id="dist4"></div></button>
@@ -70,7 +70,7 @@ input{width:100%; padding:14px; margin:10px 0; font-size:18px; border-radius:10p
 <button id="btn32" onclick="setMode(32)">1/32<div class="distance-display" id="dist32"></div></button>
 </div>
 
-<!-- 下排 2 個 -->
+<!-- 下排 -->
 <div class="mode-buttons bottom-row">
 <button id="btnGold" onclick="setMode('gold_old')">金網格<div class="distance-display" id="distGoldOld"></div></button>
 <button id="btnGoldNew" onclick="setMode('gold_new')">偏中心<div class="distance-display" id="distGoldNew"></div></button>
@@ -84,54 +84,58 @@ input{width:100%; padding:14px; margin:10px 0; font-size:18px; border-radius:10p
 <script>
 let mode = 4;
 
-// ⭐ 小數統一
 function fmt(n){ return parseFloat(n.toFixed(2)); }
 
-// 📌 原版黃金網格（中心對稱 + φ）
+// ================= 原版黃金 =================
 function gold_grid(high, low, n){
     let center = (high + low)/2;
     let d1 = (high - low)/2;
     let phi = 1.618;
     let grid = [center];
     let sum = 0;
+
     for(let i=1;i<=n;i++){
         let offset = d1 * Math.pow(phi, i-1);
         sum += offset;
         grid.push(center + sum);
         grid.push(center - sum);
     }
+
     return grid.sort((a,b)=>b-a).map(fmt);
 }
 
-// 📌 新版黃金網格（偏中心 AB → φ 延伸）
+// ================= 新版黃金（修正完成） =================
 function gold_new(high, low, n){
     let w = (high + low)/2;
-    let D = high - low;        // 全距離
+
+    // ✅ 關鍵：半距離
+    let D = (high - low)/2;
+
     let phi = 1.618;
 
-    // ✔ a,b 按黃金分割
     let a = D * 0.618;
     let b = D - a;
 
-    // 起點（偏中心）
-    let H0 = w + b/2;
-    let L0 = w - b/2;
+    // ✅ 偏中心（正確）
+    let H0 = w + b;
+    let L0 = w - b;
 
     let arr = [fmt(H0), fmt(L0)];
 
-    // 每層累積距離 φ
-    let dist = a;
     for(let i=1; i<=n; i++){
-        dist = a * Math.pow(phi, i); // φ^i
+        let dist = a * Math.pow(phi, i);
         arr.push(fmt(H0 + dist));
         arr.push(fmt(L0 - dist));
     }
+
     return arr.sort((a,b)=>b-a);
 }
 
+// ================= UI =================
 function setMode(m){
     mode = m;
     document.querySelectorAll('.mode-buttons button').forEach(btn=>btn.classList.remove('active'));
+
     if(m===2) document.getElementById("btn2").classList.add("active");
     if(m===4) document.getElementById("btn4").classList.add("active");
     if(m===8) document.getElementById("btn8").classList.add("active");
@@ -139,6 +143,7 @@ function setMode(m){
     if(m===32) document.getElementById("btn32").classList.add("active");
     if(m==='gold_old') document.getElementById("btnGold").classList.add("active");
     if(m==='gold_new') document.getElementById("btnGoldNew").classList.add("active");
+
     updateDistanceDisplays();
 }
 
@@ -159,6 +164,7 @@ function updateDistanceDisplays(){
 
         let gOld = gold_grid(high,low,20);
         let gNew = gold_new(high,low,20);
+
         document.getElementById("distGoldOld").textContent = `最高層: ${gOld[0]}`;
         document.getElementById("distGoldNew").textContent = `最高層: ${gNew[0]}`;
     }else{
@@ -170,9 +176,11 @@ function updateDistanceDisplays(){
     }
 }
 
+// ================= 計算 =================
 function calc(){
     let a=parseFloat(document.getElementById("a").value);
     let b=parseFloat(document.getElementById("b").value);
+
     if(isNaN(a)||isNaN(b)){
         document.getElementById("output").innerHTML="請輸入有效數字";
         return;
@@ -182,16 +190,19 @@ function calc(){
     let low=Math.min(a,b);
     let diff=high-low;
     let center=(high+low)/2;
+
     let gridArray=[];
     let modeText='';
 
     if(mode==='gold_old'){
         gridArray = gold_grid(high,low,20);
-        modeText = '金網格';
-    }else if(mode==='gold_new'){
+        modeText='金網格';
+    }
+    else if(mode==='gold_new'){
         gridArray = gold_new(high,low,20);
-        modeText = '偏中心';
-    }else{
+        modeText='偏中心';
+    }
+    else{
         let step = diff/mode;
         modeText = `1/${mode}`;
 
@@ -200,7 +211,7 @@ function calc(){
         for(let i=1;i<=50;i++) gridArray.push(center - step*i);
 
         gridArray.sort((a,b)=>b-a);
-        gridArray = gridArray.map(v=>fmt(v));
+        gridArray = gridArray.map(fmt);
     }
 
     let html=`高值：${high}
