@@ -10,10 +10,10 @@ body { font-family:"Microsoft JhengHei",sans-serif; background:#e9eef5; margin:0
 h2{text-align:center; margin-bottom:20px; font-size:24px; color:#333;}
 input{width:100%; padding:14px; margin:10px 0; font-size:18px; border-radius:10px; border:1px solid #ccc; box-sizing:border-box;}
 
-/* 上排 5 個 */
+/* 上排按鈕 5 個 */
 .mode-buttons{display:grid; grid-template-columns: repeat(5, 1fr); gap:6px; margin-top:10px;}
-/* 下排 2 個 */
-.mode-buttons.bottom-row{display:grid; grid-template-columns: repeat(2, 1fr); gap:6px; margin-top:6px;}
+/* 下排 4 個 */
+.mode-buttons.bottom-row{display:grid; grid-template-columns: repeat(4, 1fr); gap:6px; margin-top:6px;}
 
 .mode-buttons button{
     padding:10px;
@@ -61,7 +61,7 @@ input{width:100%; padding:14px; margin:10px 0; font-size:18px; border-radius:10p
 <input id="a" type="number" placeholder="輸入數字 A">
 <input id="b" type="number" placeholder="輸入數字 B">
 
-<!-- 上排 -->
+<!-- 上排 5 個 -->
 <div class="mode-buttons">
 <button id="btn2" onclick="setMode(2)">1/2<div class="distance-display" id="dist2"></div></button>
 <button id="btn4" onclick="setMode(4)" class="active">1/4<div class="distance-display" id="dist4"></div></button>
@@ -70,10 +70,12 @@ input{width:100%; padding:14px; margin:10px 0; font-size:18px; border-radius:10p
 <button id="btn32" onclick="setMode(32)">1/32<div class="distance-display" id="dist32"></div></button>
 </div>
 
-<!-- 下排 -->
+<!-- 下排 4 個 -->
 <div class="mode-buttons bottom-row">
-<button id="btnGold" onclick="setMode('gold_old')">金網格<div class="distance-display" id="distGoldOld"></div></button>
-<button id="btnGoldNew" onclick="setMode('gold_new')">偏中心<div class="distance-display" id="distGoldNew"></div></button>
+<button id="btnGoldOld" onclick="setMode('gold_old')">金網格<div class="distance-display" id="distGoldOld"></div></button>
+<button id="btnGoldNew" onclick="setMode('gold_new')">偏中心(指數)<div class="distance-display" id="distGoldNew"></div></button>
+<button id="btnGoldAccum" onclick="setMode('gold_accum')">偏中心<div class="distance-display" id="distGoldAccum"></div></button>
+<button id="btnGoldCenter" onclick="setMode('gold_center')">金網格(指數)<div class="distance-display" id="distGoldCenter"></div></button>
 </div>
 
 <button class="calc-btn" onclick="calc()">計算</button>
@@ -84,66 +86,100 @@ input{width:100%; padding:14px; margin:10px 0; font-size:18px; border-radius:10p
 <script>
 let mode = 4;
 
+// ⭐ 小數統一
 function fmt(n){ return parseFloat(n.toFixed(2)); }
 
-// ================= 原版黃金 =================
+// 📌 原版黃金網格（中心對稱 + φ）
 function gold_grid(high, low, n){
     let center = (high + low)/2;
     let d1 = (high - low)/2;
     let phi = 1.618;
     let grid = [center];
     let sum = 0;
-
     for(let i=1;i<=n;i++){
         let offset = d1 * Math.pow(phi, i-1);
         sum += offset;
         grid.push(center + sum);
         grid.push(center - sum);
     }
-
     return grid.sort((a,b)=>b-a).map(fmt);
 }
 
-// ================= 新版黃金（修正完成） =================
+// 📌 新版黃金網格（偏中心 AB → φ 延伸）
 function gold_new(high, low, n){
     let w = (high + low)/2;
-
-    // ✅ 關鍵：半距離
-    let D = (high - low)/2;
-
+    let D = high - low;        
     let phi = 1.618;
 
     let a = D * 0.618;
     let b = D - a;
 
-    // ✅ 偏中心（正確）
-    let H0 = w + b;
-    let L0 = w - b;
+    let H0 = w + b/2;
+    let L0 = w - b/2;
 
     let arr = [fmt(H0), fmt(L0)];
 
     for(let i=1; i<=n; i++){
-        let dist = a * Math.pow(phi, i);
+        let dist = a * Math.pow(phi, i); 
         arr.push(fmt(H0 + dist));
         arr.push(fmt(L0 - dist));
     }
-
     return arr.sort((a,b)=>b-a);
 }
 
-// ================= UI =================
+// 📌 黃金累加版（從偏中心累加 φ）
+function gold_accum(high, low, n){
+    let w = (high + low)/2;
+    let D = high - low;        
+    let phi = 1.618;
+
+    let a = D * 0.618;
+    let b = D - a;
+
+    let H0 = w + b/2;
+    let L0 = w - b/2;
+
+    let arr = [fmt(H0), fmt(L0)];
+    let distH = H0;
+    let distL = L0;
+
+    for(let i=1; i<=n; i++){
+        let offset = a * Math.pow(phi, i);
+        distH += offset;
+        distL -= offset;
+        arr.push(fmt(distH));
+        arr.push(fmt(distL));
+    }
+    return arr.sort((a,b)=>b-a);
+}
+
+// 📌 中心指數版 φ（以中心為基準，對稱延伸）
+function gold_center_exp(high, low, n){
+    let center = (high + low)/2;
+    let D = high - low;
+    let phi = 1.618;
+
+    let arr = [fmt(center)];
+    for(let i=1;i<=n;i++){
+        let offset = (D/2) * Math.pow(phi, i);
+        arr.push(fmt(center + offset));
+        arr.push(fmt(center - offset));
+    }
+    return arr.sort((a,b)=>b-a);
+}
+
 function setMode(m){
     mode = m;
     document.querySelectorAll('.mode-buttons button').forEach(btn=>btn.classList.remove('active'));
-
     if(m===2) document.getElementById("btn2").classList.add("active");
     if(m===4) document.getElementById("btn4").classList.add("active");
     if(m===8) document.getElementById("btn8").classList.add("active");
     if(m===16) document.getElementById("btn16").classList.add("active");
     if(m===32) document.getElementById("btn32").classList.add("active");
-    if(m==='gold_old') document.getElementById("btnGold").classList.add("active");
+    if(m==='gold_old') document.getElementById("btnGoldOld").classList.add("active");
     if(m==='gold_new') document.getElementById("btnGoldNew").classList.add("active");
-
+    if(m==='gold_accum') document.getElementById("btnGoldAccum").classList.add("active");
+    if(m==='gold_center') document.getElementById("btnGoldCenter").classList.add("active");
     updateDistanceDisplays();
 }
 
@@ -162,25 +198,24 @@ function updateDistanceDisplays(){
         document.getElementById("dist16").textContent=`1/16距離: ${(diff/16).toFixed(2)}`;
         document.getElementById("dist32").textContent=`1/32距離: ${(diff/32).toFixed(2)}`;
 
-        let gOld = gold_grid(high,low,20);
-        let gNew = gold_new(high,low,20);
-
-        document.getElementById("distGoldOld").textContent = `最高層: ${gOld[0]}`;
-        document.getElementById("distGoldNew").textContent = `最高層: ${gNew[0]}`;
+        document.getElementById("distGoldOld").textContent = `最高層: ${gold_grid(high,low,20)[0]}`;
+        document.getElementById("distGoldNew").textContent = `最高層: ${gold_new(high,low,20)[0]}`;
+        document.getElementById("distGoldAccum").textContent = `最高層: ${gold_accum(high,low,20)[0]}`;
+        document.getElementById("distGoldCenter").textContent = `最高層: ${gold_center_exp(high,low,20)[0]}`;
     }else{
         ["2","4","8","16","32"].forEach(n=>{
             document.getElementById("dist"+n).textContent=`1/${n}距離: --`;
         });
         document.getElementById("distGoldOld").textContent="--";
         document.getElementById("distGoldNew").textContent="--";
+        document.getElementById("distGoldAccum").textContent="--";
+        document.getElementById("distGoldCenter").textContent="--";
     }
 }
 
-// ================= 計算 =================
 function calc(){
     let a=parseFloat(document.getElementById("a").value);
     let b=parseFloat(document.getElementById("b").value);
-
     if(isNaN(a)||isNaN(b)){
         document.getElementById("output").innerHTML="請輸入有效數字";
         return;
@@ -190,19 +225,22 @@ function calc(){
     let low=Math.min(a,b);
     let diff=high-low;
     let center=(high+low)/2;
-
     let gridArray=[];
     let modeText='';
 
     if(mode==='gold_old'){
         gridArray = gold_grid(high,low,20);
-        modeText='金網格';
-    }
-    else if(mode==='gold_new'){
+        modeText = '金網格';
+    }else if(mode==='gold_new'){
         gridArray = gold_new(high,low,20);
-        modeText='偏中心';
-    }
-    else{
+        modeText = '偏中心(指數)';
+    }else if(mode==='gold_accum'){
+        gridArray = gold_accum(high,low,20);
+        modeText = '偏中心';
+    }else if(mode==='gold_center'){
+        gridArray = gold_center_exp(high,low,20);
+        modeText = '金網格(指數)';
+    }else{
         let step = diff/mode;
         modeText = `1/${mode}`;
 
@@ -211,7 +249,7 @@ function calc(){
         for(let i=1;i<=50;i++) gridArray.push(center - step*i);
 
         gridArray.sort((a,b)=>b-a);
-        gridArray = gridArray.map(fmt);
+        gridArray = gridArray.map(v=>fmt(v));
     }
 
     let html=`高值：${high}
