@@ -108,7 +108,7 @@ function gold_grid(high, low, n){
 // 📌 新版黃金網格（偏中心 AB → φ 延伸）
 function gold_new(high, low, n){
     let w = (high + low)/2;
-    let D = high - low;        
+    let D = (high + low)/2;        
     let phi = 1.618;
 
     let a = D * 0.618;
@@ -130,7 +130,7 @@ function gold_new(high, low, n){
 // 📌 黃金累加版（從偏中心累加 φ）
 function gold_accum(high, low, n){
     let w = (high + low)/2;
-    let D = high - low;        
+    let D = (high + low)/2;        
     let phi = 1.618;
 
     let a = D * 0.618;
@@ -156,7 +156,7 @@ function gold_accum(high, low, n){
 // 📌 中心指數版 φ（以中心為基準，對稱延伸）
 function gold_center_exp(high, low, n){
     let center = (high + low)/2;
-    let D = high - low;
+    let D = (high + low)/2;
     let phi = 1.618;
 
     let arr = [fmt(center)];
